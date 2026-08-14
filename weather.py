@@ -131,7 +131,7 @@ def get_weather(service_key, nx, ny):
     response = requests.get(
         FORECAST_API_URL,
         params=params,
-        timeout=10
+        timeout=30
     )
 
     if response.status_code != 200:
