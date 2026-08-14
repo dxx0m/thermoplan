@@ -1,6 +1,7 @@
 import streamlit as st
 import datetime
 from openai import OpenAI
+import textwrap
 
 client = OpenAI(
     api_key=st.secrets["UPSTAGE_API_KEY"],
@@ -1506,38 +1507,26 @@ if st.session_state.get("analyze", False):
             "폭염 위험도와 일정 변경 가능 여부를 고려해 하루 일정을 정리했습니다."
         )
 
-        # HTML 시작
-        schedule_cards = '<div class="schedule-grid">'
+        cols = st.columns(3)
 
-        for item in analyzed_schedules:
+        for i, item in enumerate(analyzed_schedules):
 
             schedule = item["final"]
 
-            start_text = schedule["start"].strftime(
-                "%H:%M"
-            )
+            start_text = schedule["start"].strftime("%H:%M")
+            end_text = schedule["end"].strftime("%H:%M")
 
-            end_text = schedule["end"].strftime(
-                "%H:%M"
-            )
-
-            risk = item["recommended_risk"]
-
-            if risk is None:
-                risk = 0
+            risk = item["recommended_risk"] or 0
 
             if risk >= 80:
                 risk_class = "risk-high"
                 risk_text = "매우 높음"
-
             elif risk >= 60:
                 risk_class = "risk-warning"
                 risk_text = "높음"
-
             elif risk >= 40:
                 risk_class = "risk-caution"
                 risk_text = "주의"
-
             else:
                 risk_class = "risk-safe"
                 risk_text = "낮음"
@@ -1549,41 +1538,20 @@ if st.session_state.get("analyze", False):
                 status = "기존 일정 유지"
                 status_class = "schedule-normal"
 
-            schedule_cards += f"""
-            <div class="schedule-card">
+            with cols[i % 3]:
 
-                <div class="schedule-time">
-                    {start_text} — {end_text}
+                html = f"""
+                <div class="schedule-card">
+                    <div class="schedule-time">{start_text} — {end_text}</div>
+                    <div class="schedule-name">{schedule["name"]}</div>
+                    <div class="schedule-info">{schedule["place"]} · {schedule["level"]} 활동</div>
+                    <div class="{risk_class} schedule-risk">● 폭염 위험도 {risk}점 · {risk_text}</div>
+                    <div class="{status_class}">{status}</div>
                 </div>
+                """
 
-                <div class="schedule-name">
-                    {schedule["name"]}
-                </div>
+                st.markdown(textwrap.dedent(html).strip(), unsafe_allow_html=True)
 
-                <div class="schedule-info">
-                    {schedule["place"]}
-                    ·
-                    {schedule["level"]} 활동
-                </div>
-
-                <div class="{risk_class} schedule-risk">
-                    ● 폭염 위험도 {risk}점 · {risk_text}
-                </div>
-
-                <div class="{status_class}">
-                    {status}
-                </div>
-
-            </div>
-            """
-
-        schedule_cards += "</div>"
-
-        # ★ 반드시 unsafe_allow_html=True
-        st.markdown(
-            schedule_cards,
-            unsafe_allow_html=True
-        )
 
         # -----------------------------------------
         # 일정 안내
@@ -1636,19 +1604,11 @@ if st.session_state.get("analyze", False):
             # 안내 카드
             # -----------------------------------------
 
-            st.markdown(
-                f"""
-                <div class="guide-card">
+            html = f"""
+            <div class="guide-card">
+                <div class="guide-title">{schedule["name"]}</div>
+                <div class="guide-text">{comment}</div>
+            </div>
+            """
 
-                    <div class="guide-title">
-                        {schedule["name"]}
-                    </div>
-
-                    <div class="guide-text">
-                        {comment}
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            st.markdown(textwrap.dedent(html).strip(), unsafe_allow_html=True)
